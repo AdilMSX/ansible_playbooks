@@ -1,0 +1,5 @@
+[zone1]
+DESKTOP[1:4]
+
+[zone1:vars]
+zone=zone1
