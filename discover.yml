@@ -1,0 +1,86 @@
+---
+- name: Discover inventory containing a host
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # AAP Controller URL
+    aap_url: "https://aap.example.com"
+
+    # Supplied through an AAP Survey
+    # Survey variable: target_host
+
+    # API token supplied through an AAP credential
+    aap_api_token: "{{ lookup('env', 'AAP_API_TOKEN') }}"
+
+  tasks:
+
+    - name: Validate survey input
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - target_host | length > 0
+        fail_msg: "The target_host survey variable is missing."
+
+    - name: Search host in Automation Controller
+      ansible.builtin.uri:
+        url: "{{ aap_url }}/api/controller/v2/hosts/?name={{ target_host | urlencode }}&page_size=200"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ aap_api_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: host_search
+
+    - name: Filter exact host matches
+      ansible.builtin.set_fact:
+        matching_hosts: >-
+          {{
+            host_search.json.results
+            | selectattr('name', 'equalto', target_host)
+            | list
+          }}
+
+    - name: Fail if host was not found
+      ansible.builtin.fail:
+        msg: "Host {{ target_host }} was not found in Automation Controller."
+      when: matching_hosts | length == 0
+
+    - name: Retrieve inventory information
+      ansible.builtin.uri:
+        url: "{{ aap_url }}/api/controller/v2/inventories/{{ item.inventory }}/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ aap_api_token }}"
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      loop: "{{ matching_hosts }}"
+      register: inventory_details
+
+    - name: Build inventory list
+      ansible.builtin.set_fact:
+        discovered_inventories: >-
+          {{
+            inventory_details.results
+            | map(attribute='json.name')
+            | unique
+            | list
+          }}
+
+    - name: Display discovery result
+      ansible.builtin.debug:
+        msg:
+          host: "{{ target_host }}"
+          inventories: "{{ discovered_inventories }}"
+
+    - name: Export discovery results to workflow
+      ansible.builtin.set_stats:
+        data:
+          discovered_host: "{{ target_host }}"
+          discovered_inventory: "{{ discovered_inventories }}"
+          discovered_inventory_name: "{{ discovered_inventories | first }}"
+        per_host: false
