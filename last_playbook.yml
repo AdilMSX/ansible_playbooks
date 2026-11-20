@@ -1,0 +1,7 @@
+---
+- name: Test Elements
+  hosts: all
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        var: zone
