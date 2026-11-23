@@ -14,17 +14,17 @@
 
     # Demo mapping: replace with your actual AAP IDs
     inventory_execution_map:
-      inventory.z1:
+      inventory_z1:
         credential_id: 101
         instance_group_id: 11
         zone: zone1
 
-      inventory.z2:
+      inventory_z2:
         credential_id: 102
         instance_group_id: 12
         zone: zone2
 
-      inventory.z3:
+      inventory_z3:
         credential_id: 103
         instance_group_id: 13
         zone: zone3
