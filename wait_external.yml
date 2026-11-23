@@ -1,0 +1,73 @@
+
+---
+- name: Wait for external PostgreSQL Job Template
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aap_url: "https://aap.example.com"
+    aap_api_token: "{{ lookup('env', 'AAP_API_TOKEN') }}"
+
+    poll_delay: 15
+    max_retries: 120
+
+    terminal_states:
+      - successful
+      - failed
+      - error
+      - canceled
+
+  tasks:
+
+    - name: Validate external job ID
+      ansible.builtin.assert:
+        that:
+          - external_job_id is defined
+          - external_job_id | int > 0
+        fail_msg: "External job ID is missing."
+
+    - name: Display external job URL
+      ansible.builtin.debug:
+        msg: >-
+          Monitoring external job:
+          {{ aap_url }}/#/jobs/playbook/{{ external_job_id }}/details
+
+    - name: Wait until external job finishes
+      ansible.builtin.uri:
+        url: "{{ aap_url }}/api/controller/v2/jobs/{{ external_job_id }}/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ aap_api_token }}"
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: external_status
+      until: external_status.json.status in terminal_states
+      retries: "{{ max_retries }}"
+      delay: "{{ poll_delay }}"
+      no_log: true
+
+    - name: Display external job result
+      ansible.builtin.debug:
+        msg:
+          - "External Job ID: {{ external_job_id }}"
+          - "Final status: {{ external_status.json.status }}"
+
+    - name: Export external job result
+      ansible.builtin.set_stats:
+        data:
+          external_job_final_status: "{{ external_status.json.status }}"
+        per_host: false
+
+    - name: Fail if external job did not succeed
+      ansible.builtin.fail:
+        msg: >-
+          External PostgreSQL job {{ external_job_id }}
+          finished with status {{ external_status.json.status }}.
+      when: external_status.json.status != 'successful'
+
+    - name: Confirm successful execution
+      ansible.builtin.debug:
+        msg: "External PostgreSQL job completed successfully."
+
