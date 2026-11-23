@@ -3,3 +3,4 @@ DESKTOP[1:4]
 
 [zone1:vars]
 zone=zone1
+ansible_connection = local
