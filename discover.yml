@@ -61,6 +61,9 @@
       loop: "{{ matching_hosts }}"
       register: inventory_details
 
+    - debug:
+        var: inventory_details.results.0.json.id
+
     - name: Build inventory list
       ansible.builtin.set_fact:
         discovered_inventories: >-
@@ -83,4 +86,5 @@
           discovered_host: "{{ target_host }}"
           discovered_inventory: "{{ discovered_inventories }}"
           discovered_inventory_name: "{{ discovered_inventories | first }}"
+          discovered_inventory_id: "{{ inventory_details.results.0.json.id }}"
         per_host: false

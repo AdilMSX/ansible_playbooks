@@ -15,18 +15,18 @@
     # Demo mapping: replace with your actual AAP IDs
     inventory_execution_map:
       inventory_z1:
-        credential_id: 101
-        instance_group_id: 11
+        # credential_id: 101
+        instance_group_id: 3
         zone: zone1
 
       inventory_z2:
-        credential_id: 102
-        instance_group_id: 12
+        # credential_id: 102
+        instance_group_id: 4
         zone: zone2
 
       inventory_z3:
-        credential_id: 103
-        instance_group_id: 13
+        # credential_id: 103
+        instance_group_id: 4
         zone: zone3
 
   tasks:
@@ -49,8 +49,8 @@
 
     - name: Calculate execution parameters
       ansible.builtin.set_fact:
-        selected_credential_id: >-
-          {{ inventory_execution_map[discovered_inventory_name].credential_id }}
+        # selected_credential_id: >-
+        #   {{ inventory_execution_map[discovered_inventory_name].credential_id }}
         selected_instance_group_id: >-
           {{ inventory_execution_map[discovered_inventory_name].instance_group_id }}
         selected_zone: >-
@@ -63,7 +63,7 @@
           - "Inventory: {{ discovered_inventory_name }}"
           - "Inventory ID: {{ discovered_inventory_id }}"
           - "Zone: {{ selected_zone }}"
-          - "Credential ID: {{ selected_credential_id }}"
+          # - "Credential ID: {{ selected_credential_id }}"
           - "Instance Group ID: {{ selected_instance_group_id }}"
           - "External JT ID: {{ external_jt_id }}"
 
@@ -77,8 +77,8 @@
         body_format: json
         body:
           inventory: "{{ discovered_inventory_id | int }}"
-          credentials:
-            - "{{ selected_credential_id | int }}"
+          # credentials:
+          #   - "{{ selected_credential_id | int }}"
           instance_groups:
             - "{{ selected_instance_group_id | int }}"
           extra_vars:
@@ -94,12 +94,12 @@
       ansible.builtin.debug:
         msg:
           - "External job ID: {{ external_launch.json.id }}"
-          - "External job URL: {{ aap_url }}/#/jobs/playbook/{{ external_launch.json.id }}/details"
+          - "External job URL: {{ aap_url }}/execution/jobs/playbook/{{ external_launch.json.id }}/output"
 
     - name: Export external job ID to workflow
       ansible.builtin.set_stats:
         data:
           external_job_id: "{{ external_launch.json.id }}"
-          external_job_url: "{{ aap_url }}/#/jobs/playbook/{{ external_launch.json.id }}/details"
+          external_job_url: "{{ aap_url }}/execution/jobs/playbook/{{ external_launch.json.id }}/output"
         per_host: false
 
